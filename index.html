@@ -1,0 +1,953 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="مكبس PDF: ضغط ملفات PDF الممسوحة داخل المتصفح مع عداد للحجم ومعاينة قبل الحفظ. الملفات ما تنرفع لأي مكان.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2044%2044%22%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%2238%22%20height%3D%2238%22%20rx%3D%229%22%20fill%3D%22%230B6B5C%22/%3E%3Crect%20x%3D%2212%22%20y%3D%2210%22%20width%3D%2220%22%20height%3D%224%22%20rx%3D%222%22%20fill%3D%22%23fff%22/%3E%3Crect%20x%3D%2212%22%20y%3D%2230%22%20width%3D%2220%22%20height%3D%224%22%20rx%3D%222%22%20fill%3D%22%23fff%22/%3E%3Cpath%20d%3D%22M22%2015.5v4.2m0%200-2.6-2.4m2.6%202.4%202.6-2.4M22%2028.5v-4.2m0%200-2.6%202.4m2.6-2.4%202.6%202.4%22%20stroke%3D%22%23fff%22%20stroke-width%3D%222%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>مكبس PDF</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Readex+Pro:wght@500;600;700&display=swap">
+<style>
+/* Layout: a two-panel workbench. Controls column on the start side (right in RTL), a large preview stage beside it; stacks on phones. */
+:root {
+  --bg: #EEF1EC;
+  --surface: #FFFFFF;
+  --ink: #17201B;
+  --muted: #5A665F;
+  --line: #D5DCD5;
+  --accent: #0B6B5C;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #DCEEE8;
+  --good: #1E7A3B;
+  --good-soft: #DFF1E3;
+  --warn: #8F5300;
+  --warn-soft: #FCEFD6;
+  --bad: #B3261E;
+  --bad-soft: #FBE4E1;
+  --stage: #DDE2DC;
+  --paper-shadow: 0 1px 2px rgba(20, 30, 25, .12), 0 8px 24px rgba(20, 30, 25, .10);
+  --font-ui: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, system-ui, sans-serif;
+  --font-display: "Readex Pro", "IBM Plex Sans Arabic", "Segoe UI", system-ui, sans-serif;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101412; --surface: #182019; --ink: #E5ECE7; --muted: #9AA79F; --line: #2B3530;
+    --accent: #52C4AE; --accent-ink: #06261F; --accent-soft: #163A32;
+    --good: #6FD08A; --good-soft: #17331F; --warn: #F2B55E; --warn-soft: #3A2A10; --bad: #FF8A80; --bad-soft: #3B1714;
+    --stage: #0B0E0C; --paper-shadow: 0 1px 2px rgba(0,0,0,.5), 0 8px 24px rgba(0,0,0,.45);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101412; --surface: #182019; --ink: #E5ECE7; --muted: #9AA79F; --line: #2B3530;
+  --accent: #52C4AE; --accent-ink: #06261F; --accent-soft: #163A32;
+  --good: #6FD08A; --good-soft: #17331F; --warn: #F2B55E; --warn-soft: #3A2A10; --bad: #FF8A80; --bad-soft: #3B1714;
+  --stage: #0B0E0C; --paper-shadow: 0 1px 2px rgba(0,0,0,.5), 0 8px 24px rgba(0,0,0,.45);
+  color-scheme: dark;
+}
+html, body { background: var(--bg); color: var(--ink); }
+body { font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+* { box-sizing: border-box; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.app { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px; max-width: 1360px; margin: 0 auto; display: grid; gap: 18px; }
+.top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.mark { width: 44px; height: 44px; flex: none; }
+.top h1 { font-family: var(--font-display); font-weight: 700; font-size: 1.6rem; line-height: 1.2; margin: 0; letter-spacing: 0; }
+.top p { margin: 2px 0 0; color: var(--muted); font-size: .95rem; }
+.lock { display: inline-flex; align-items: center; gap: 6px; margin-inline-start: auto; font-size: .85rem; color: var(--good); background: var(--good-soft); padding: 4px 10px; border-radius: 999px; }
+
+.bench { display: grid; grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 860px) { .bench { grid-template-columns: minmax(0, 1fr); } }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); min-width: 0; }
+.controls { padding: 18px; display: grid; gap: 22px; }
+.block { display: grid; gap: 10px; min-width: 0; }
+.block h2 { font-family: var(--font-display); font-size: .82rem; font-weight: 600; color: var(--muted); margin: 0; letter-spacing: .02em; }
+
+.drop { display: grid; gap: 2px; justify-items: center; text-align: center; padding: 18px 12px; border: 1.5px dashed var(--line); border-radius: var(--r); cursor: pointer; transition: border-color .15s, background .15s; }
+.drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop strong { font-weight: 600; color: var(--accent); }
+.drop span { font-size: .85rem; color: var(--muted); }
+
+.files { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.files li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px; align-items: center; padding: 8px 10px; border-radius: 8px; background: var(--bg); }
+.files .name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.files .meta { grid-column: 1; font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.files .x { grid-row: 1 / span 2; grid-column: 2; border: 0; background: transparent; color: var(--muted); width: 30px; height: 30px; border-radius: 6px; font-size: 18px; line-height: 1; }
+.files .x:hover { background: var(--bad-soft); color: var(--bad); }
+.badge { display: inline-block; font-size: .72rem; padding: 0 7px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); margin-inline-start: 6px; vertical-align: 1px; }
+.totals { margin: 0; font-size: .85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--bg); border-radius: 9px; padding: 3px; gap: 3px; }
+.seg button { border: 0; background: transparent; padding: 7px 4px; border-radius: 7px; font-weight: 500; font-size: .92rem; color: var(--muted); }
+.seg button[aria-checked="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.hint { margin: 0; font-size: .85rem; color: var(--muted); }
+
+.counter { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 8px; align-items: stretch; }
+.counter > button { border: 1px solid var(--line); background: var(--surface); border-radius: 9px; font-size: 22px; line-height: 1; }
+.counter > button:hover { border-color: var(--accent); color: var(--accent); }
+.num { display: flex; align-items: baseline; justify-content: center; gap: 6px; border: 1px solid var(--line); border-radius: 9px; padding: 4px 10px; background: var(--bg); }
+.num input { width: 5.5ch; border: 0; background: transparent; text-align: center; font-family: var(--font-display); font-size: 2rem; font-weight: 600; font-variant-numeric: tabular-nums; direction: ltr; padding: 0; -moz-appearance: textfield; }
+.num input::-webkit-outer-spin-button, .num input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.num input:focus { outline: none; }
+.num:focus-within { border-color: var(--accent); }
+.num span { color: var(--muted); }
+input[type="range"] { width: 100%; accent-color: var(--accent); margin: 0; }
+.scale { display: flex; justify-content: space-between; font-size: .78rem; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: -4px; }
+
+.readout { display: grid; gap: 6px; padding: 10px 12px; border-radius: 9px; background: var(--bg); }
+.readout .row { display: flex; justify-content: space-between; gap: 10px; font-size: .88rem; flex-wrap: wrap; }
+.readout .row span:first-child { color: var(--muted); }
+.readout b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: .85rem; padding: 1px 10px; border-radius: 999px; }
+.chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.chip.good { color: var(--good); background: var(--good-soft); }
+.chip.warn { color: var(--warn); background: var(--warn-soft); }
+.chip.bad { color: var(--bad); background: var(--bad-soft); }
+.note { margin: 0; font-size: .85rem; padding: 8px 10px; border-radius: 8px; }
+.note.warn { color: var(--warn); background: var(--warn-soft); }
+.note.bad { color: var(--bad); background: var(--bad-soft); }
+.note.info { color: var(--muted); background: var(--bg); }
+
+.inkrow { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 10px; align-items: center; font-size: .88rem; }
+.inkrow small { grid-column: 1 / -1; color: var(--muted); font-size: .8rem; }
+
+.check { display: flex; gap: 8px; align-items: center; font-size: .92rem; cursor: pointer; }
+.check input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+.primary { border: 0; background: var(--accent); color: var(--accent-ink); font-weight: 600; font-size: 1.02rem; padding: 12px 16px; border-radius: 10px; width: 100%; }
+.primary:hover { filter: brightness(1.06); }
+.primary:disabled { opacity: .45; cursor: not-allowed; filter: none; }
+.ghost { border: 1px solid var(--line); background: var(--surface); padding: 6px 12px; border-radius: 8px; font-size: .88rem; }
+.ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+.progress { display: grid; gap: 8px; }
+.bar { height: 8px; border-radius: 99px; background: var(--bg); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: inherit; transition: width .2s; }
+.ptext { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: .85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.results { display: grid; gap: 8px; }
+.res { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; }
+.res .name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.res .sz { grid-column: 1; font-size: .85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.res .sz b { color: var(--good); font-weight: 600; }
+.res button { grid-row: 1 / span 2; grid-column: 2; }
+.res .msg { grid-column: 1 / -1; font-size: .8rem; color: var(--muted); }
+
+.preview { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-height: 420px; overflow: hidden; }
+.tools { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.tools .grp { display: flex; align-items: center; gap: 6px; }
+.tools select { max-width: 220px; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 5px 8px; }
+.pager { display: flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; font-size: .9rem; }
+.pager button { width: 32px; height: 32px; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; }
+.pager input { width: 4.5ch; text-align: center; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 4px 2px; direction: ltr; }
+.mini { display: inline-flex; background: var(--bg); padding: 3px; border-radius: 8px; gap: 2px; }
+.mini button { border: 0; background: transparent; padding: 4px 10px; border-radius: 6px; font-size: .86rem; color: var(--muted); }
+.mini button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.stage { position: relative; background: var(--stage); overflow: auto; max-height: calc(100vh - 170px); min-height: 360px; padding: 18px; touch-action: pan-x pan-y; }
+@media (max-width: 860px) { .stage { max-height: 75vh; } }
+.sheet { position: relative; margin: 0 auto; box-shadow: var(--paper-shadow); background: #fff; }
+.sheet canvas { display: block; width: 100%; height: auto; }
+.sheet .tag { position: absolute; top: 10px; inset-inline-start: 10px; font-size: .8rem; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: rgba(15, 25, 20, .78); color: #fff; pointer-events: none; }
+.stage .empty { display: grid; place-items: center; min-height: 320px; color: var(--muted); text-align: center; padding: 20px; }
+.busy { position: absolute; inset-inline-end: 14px; top: 14px; font-size: .8rem; color: var(--muted); background: var(--surface); padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); }
+.foot { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 8px 12px; border-top: 1px solid var(--line); font-size: .85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.foot b { color: var(--ink); font-weight: 600; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="app" dir="rtl" lang="ar">
+  <header class="top">
+    <svg class="mark" viewBox="0 0 44 44" aria-hidden="true">
+      <rect x="3" y="3" width="38" height="38" rx="9" fill="var(--accent)"/>
+      <rect x="12" y="10" width="20" height="4" rx="2" fill="var(--accent-ink)"/>
+      <rect x="12" y="30" width="20" height="4" rx="2" fill="var(--accent-ink)"/>
+      <path d="M22 15.5v4.2m0 0-2.6-2.4m2.6 2.4 2.6-2.4M22 28.5v-4.2m0 0-2.6 2.4m2.6-2.4 2.6 2.4" stroke="var(--accent-ink)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div>
+      <h1>مكبس PDF</h1>
+      <p>اختر الحجم اللي تبيه، شوف المعاينة، وإذا مو واضحة زوّد الحجم.</p>
+    </div>
+    <span class="lock"><svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11V8a5 5 0 0 1 10 0v3M5 11h14v10H5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>الضغط يتم في جهازك، الملفات ما تنرفع</span>
+  </header>
+
+  <main class="bench">
+    <section class="panel controls" aria-label="الإعدادات">
+      <div class="block">
+        <h2>الملفات</h2>
+        <label class="drop" id="drop" for="fileInput">
+          <input type="file" id="fileInput" accept="application/pdf,.pdf" multiple hidden>
+          <strong>أضف ملفات PDF</strong>
+          <span>اسحبها هنا أو اضغط للاختيار. تقدر تضيف أكثر من ملف</span>
+        </label>
+        <ul class="files" id="fileList"></ul>
+        <p class="note bad" id="fileErr" hidden></p>
+        <p class="totals" id="totals"></p>
+      </div>
+
+      <div class="block">
+        <h2>نوع الضغط</h2>
+        <div class="seg" role="radiogroup" aria-label="نوع الضغط" id="modeSeg">
+          <button type="button" role="radio" data-mode="color" id="mode-color">ملوّن</button>
+          <button type="button" role="radio" data-mode="gray" id="mode-gray">رمادي</button>
+          <button type="button" role="radio" data-mode="bw" id="mode-bw">أبيض وأسود</button>
+        </div>
+        <p class="hint" id="modeHint"></p>
+        <div class="inkrow" id="inkRow" hidden>
+          <label for="ink">سماكة الحبر</label>
+          <input type="range" id="ink" min="120" max="225" step="5" value="170">
+          <small>إذا الحروف مقطّعة زوّدها، وإذا طلعت نقط سوداء في الخلفية نقّصها.</small>
+        </div>
+      </div>
+
+      <div class="block">
+        <h2>الحجم المطلوب لكل الملفات</h2>
+        <div class="counter">
+          <button type="button" id="plus" aria-label="زِد الحجم">+</button>
+          <div class="num"><input id="mb" type="number" inputmode="decimal" step="0.1" min="0.1" aria-label="الحجم بالميجا"><span>ميجا</span></div>
+          <button type="button" id="minus" aria-label="أنقص الحجم">−</button>
+        </div>
+        <input type="range" id="slider" min="0" max="1000" step="1" aria-label="عداد الحجم">
+        <div class="scale"><span id="sMin"></span><span id="sMax"></span></div>
+        <div class="readout">
+          <div class="row"><span>الوضوح</span><span class="chip good" id="qChip">—</span></div>
+          <div class="row"><span>الإعداد المختار</span><b id="qSet">—</b></div>
+          <div class="row"><span>الحجم المتوقع</span><b id="qEst">—</b></div>
+        </div>
+        <p class="note warn" id="floorNote" hidden></p>
+      </div>
+
+      <label class="check" id="mergeRow" hidden><input type="checkbox" id="merge"> ادمج كل الملفات في ملف واحد</label>
+
+      <div class="block">
+        <button type="button" class="primary" id="go" disabled>اضغط الملفات</button>
+        <div class="progress" id="progress" hidden>
+          <div class="bar"><i id="barFill"></i></div>
+          <div class="ptext"><span id="pText"></span><button type="button" class="ghost" id="cancel">إلغاء</button></div>
+        </div>
+        <div class="results" id="results"></div>
+      </div>
+    </section>
+
+    <section class="panel preview" aria-label="المعاينة">
+      <div class="tools">
+        <div class="grp" id="fileSelWrap" hidden><select id="fileSel" aria-label="الملف"></select></div>
+        <div class="pager">
+          <button type="button" id="prevPg" aria-label="الصفحة السابقة">›</button>
+          <span>صفحة</span><input id="pgNum" type="number" min="1" value="1" aria-label="رقم الصفحة"><span id="pgOf">من 1</span>
+          <button type="button" id="nextPg" aria-label="الصفحة التالية">‹</button>
+        </div>
+        <div class="mini" role="group" aria-label="العرض">
+          <button type="button" id="vAfter" aria-pressed="true">بعد الضغط</button>
+          <button type="button" id="vBefore" aria-pressed="false">الأصل</button>
+        </div>
+        <div class="mini" role="group" aria-label="التكبير">
+          <button type="button" data-zoom="fit" aria-pressed="true">ملائمة</button>
+          <button type="button" data-zoom="1" aria-pressed="false">100%</button>
+          <button type="button" data-zoom="2" aria-pressed="false">200%</button>
+        </div>
+      </div>
+      <div class="stage" id="stage">
+        <div class="empty" id="empty">أضف ملف PDF عشان تشوف المعاينة هنا</div>
+        <div class="sheet" id="sheet" hidden>
+          <canvas id="cvAfter"></canvas>
+          <canvas id="cvBefore" hidden></canvas>
+          <span class="tag" id="tag">بعد الضغط</span>
+        </div>
+        <span class="busy" id="busy" hidden>يجهّز المعاينة…</span>
+      </div>
+      <div class="foot">
+        <span>هذه الصفحة بعد الضغط: <b id="pgSize">—</b></span>
+        <span>متوسط الصفحة في الأصل: <b id="pgOrig">—</b></span>
+        <span>اضغط مطولاً على الصفحة لرؤية الأصل</span>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+/* ---- CCITT Group 4 encoder (T.6), mirrors libtiff Fax3Encode2DRow ---- */
+const G4 = (() => {
+  const WT = ["00110101","000111","0111","1000","1011","1100","1110","1111","10011","10100","00111","01000","001000","000011","110100","110101","101010","101011","0100111","0001100","0001000","0010111","0000011","0000100","0101000","0101011","0010011","0100100","0011000","00000010","00000011","00011010","00011011","00010010","00010011","00010100","00010101","00010110","00010111","00101000","00101001","00101010","00101011","00101100","00101101","00000100","00000101","00001010","00001011","01010010","01010011","01010100","01010101","00100100","00100101","01011000","01011001","01011010","01011011","01001010","01001011","00110010","00110011","00110100"];
+  const WM = ["11011","10010","010111","0110111","00110110","00110111","01100100","01100101","01101000","01100111","011001100","011001101","011010010","011010011","011010100","011010101","011010110","011010111","011011000","011011001","011011010","011011011","010011000","010011001","010011010","011000","010011011"];
+  const BT = ["0000110111","010","11","10","011","0011","0010","00011","000101","000100","0000100","0000101","0000111","00000100","00000111","000011000","0000010111","0000011000","0000001000","00001100111","00001101000","00001101100","00000110111","00000101000","00000010111","00000011000","000011001010","000011001011","000011001100","000011001101","000001101000","000001101001","000001101010","000001101011","000011010010","000011010011","000011010100","000011010101","000011010110","000011010111","000001101100","000001101101","000011011010","000011011011","000001010100","000001010101","000001010110","000001010111","000001100100","000001100101","000001010010","000001010011","000000100100","000000110111","000000111000","000000100111","000000101000","000001011000","000001011001","000000101011","000000101100","000001011010","000001100110","000001100111"];
+  const BM = ["0000001111","000011001000","000011001001","000001011011","000000110011","000000110100","000000110101","0000001101100","0000001101101","0000001001010","0000001001011","0000001001100","0000001001101","0000001110010","0000001110011","0000001110100","0000001110101","0000001110110","0000001110111","0000001010010","0000001010011","0000001010100","0000001010101","0000001011010","0000001011011","0000001100100","0000001100101"];
+  const XM = ["00000001000","00000001100","00000001101","000000010010","000000010011","000000010100","000000010101","000000010110","000000010111","000000011100","000000011101","000000011110","000000011111"];
+  const tbl = a => a.map(s => [parseInt(s, 2), s.length]);
+  const wt = tbl(WT), wm = tbl(WM), bt = tbl(BT), bm = tbl(BM), xm = tbl(XM);
+  const VC = [[0b0000011, 7], [0b000011, 6], [0b011, 3], [1, 1], [0b010, 3], [0b000010, 6], [0b0000010, 7]];
+  function encode(px, w, h) {
+    let out = new Uint8Array(Math.max(4096, (w * h) >> 4)), n = 0, acc = 0, bits = 0;
+    const put = (code, len) => {
+      acc = (acc << len) | code; bits += len;
+      while (bits >= 8) {
+        bits -= 8;
+        if (n >= out.length) { const o = new Uint8Array(out.length * 2); o.set(out); out = o; }
+        out[n++] = (acc >>> bits) & 255;
+      }
+      acc &= (1 << bits) - 1;
+    };
+    const span = (run, black) => {
+      const T = black ? bt : wt, M = black ? bm : wm;
+      while (run >= 2624) { put(xm[12][0], xm[12][1]); run -= 2560; }
+      if (run >= 64) {
+        const m = run >> 6;
+        if (m <= 27) put(M[m - 1][0], M[m - 1][1]); else put(xm[m - 28][0], xm[m - 28][1]);
+        run -= m << 6;
+      }
+      put(T[run][0], T[run][1]);
+    };
+    let ref = new Uint8Array(w), roff = 0;
+    for (let y = 0; y < h; y++) {
+      const off = y * w;
+      const fa = (bs, c) => { let i = bs; while (i < w && px[off + i] === c) i++; return i; };
+      const fr = (bs, c) => { let i = bs; while (i < w && ref[roff + i] === c) i++; return i; };
+      let a0 = 0, a1 = px[off] ? 0 : fa(0, 0), b1 = ref[roff] ? 0 : fr(0, 0);
+      for (;;) {
+        const b2 = b1 < w ? fr(b1, ref[roff + b1]) : w;
+        if (b2 >= a1) {
+          const d = b1 - a1;
+          if (d < -3 || d > 3) {
+            const a2 = a1 < w ? fa(a1, px[off + a1]) : w;
+            put(1, 3);
+            if (a0 + a1 === 0 || px[off + a0] === 0) { span(a1 - a0, 0); span(a2 - a1, 1); }
+            else { span(a1 - a0, 1); span(a2 - a1, 0); }
+            a0 = a2;
+          } else { put(VC[d + 3][0], VC[d + 3][1]); a0 = a1; }
+        } else { put(1, 4); a0 = b2; }
+        if (a0 >= w) break;
+        const c = px[off + a0];
+        a1 = fa(a0, c);
+        b1 = fr(a0, c ? 0 : 1);
+        b1 = fr(b1, c);
+      }
+      ref = px; roff = off;
+    }
+    put(1, 12); put(1, 12);
+    if (bits > 0) put(0, 8 - bits);
+    return out.slice(0, n);
+  }
+  return { encode };
+})();
+
+/* ---- minimal PDF writer: one full-page image per page ---- */
+const PDFW = (() => {
+  const te = new TextEncoder();
+  function build(pages) {
+    const parts = []; let len = 0; const offs = [];
+    const push = x => { const b = typeof x === "string" ? te.encode(x) : x; parts.push(b); len += b.length; };
+    push("%PDF-1.5\n");
+    const N = pages.length, objCount = 2 + N * 3;
+    const obj = (id, head, stream) => {
+      offs[id] = len;
+      if (stream) { push(`${id} 0 obj\n${head} /Length ${stream.length} >>\nstream\n`); push(stream); push("\nendstream\nendobj\n"); }
+      else push(`${id} 0 obj\n${head}\nendobj\n`);
+    };
+    obj(1, "<< /Type /Catalog /Pages 2 0 R >>");
+    obj(2, `<< /Type /Pages /Kids [${pages.map((_, i) => `${3 + i * 3} 0 R`).join(" ")}] /Count ${N} >>`);
+    pages.forEach((p, i) => {
+      const pid = 3 + i * 3, W = p.w.toFixed(2), H = p.h.toFixed(2);
+      obj(pid, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /Im0 ${pid + 1} 0 R >> >> /Contents ${pid + 2} 0 R >>`);
+      obj(pid + 1, `<< /Type /XObject /Subtype /Image ${p.dict}`, p.data);
+      obj(pid + 2, "<<", te.encode(`q ${W} 0 0 ${H} 0 0 cm /Im0 Do Q`));
+    });
+    const xref = len;
+    let x = `xref\n0 ${objCount + 1}\n0000000000 65535 f \n`;
+    for (let i = 1; i <= objCount; i++) x += String(offs[i]).padStart(10, "0") + " 00000 n \n";
+    push(x + `trailer\n<< /Size ${objCount + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+    return new Blob(parts, { type: "application/pdf" });
+  }
+  const jpegDict = (w, h) => `/Width ${w} /Height ${h} /BitsPerComponent 8 /ColorSpace /DeviceRGB /Filter /DCTDecode`;
+  const g4Dict = (w, h) => `/Width ${w} /Height ${h} /BitsPerComponent 1 /ColorSpace /DeviceGray /Filter /CCITTFaxDecode /DecodeParms << /K -1 /Columns ${w} /Rows ${h} /BlackIs1 false >>`;
+  return { build, jpegDict, g4Dict };
+})();
+</script>
+
+<script>
+(() => {
+  "use strict";
+  const $ = s => document.querySelector(s);
+  const MB = 1048576, PAGE_OVERHEAD = 330, FILE_OVERHEAD = 1200;
+  const pdfjsReady = typeof pdfjsLib !== "undefined";
+  if (pdfjsReady) pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  const downloadsP = (window.claude && typeof window.claude.use === "function") ? window.claude.use("downloads").catch(() => null) : Promise.resolve(null);
+
+  // Ladders: each step is smaller than the one before. JPEG: [scale of source dpi, quality]; B&W: [scale].
+  const JPEG_STEPS = [[1,.86],[1,.78],[1,.7],[1,.62],[.9,.62],[.9,.55],[.8,.55],[.8,.48],[.7,.5],[.7,.42],[.62,.45],[.62,.38],[.55,.4],[.55,.33],[.48,.36],[.48,.3],[.42,.32],[.42,.26],[.36,.28],[.36,.22],[.3,.22]];
+  const BW_STEPS = [[1.5],[1.25],[1],[.9],[.8],[.72],[.64],[.56],[.5],[.44]];
+  const DEFAULT_STEP = { color: 6, gray: 6, bw: 2 };
+  const MAX_SAMPLES = 6;
+
+  const S = {
+    files: [], mode: "color", ink: 170, curve: null, step: 0, target: 0, touched: false,
+    merge: false, pf: 0, pg: 1, view: "after", zoom: "fit", running: false, cancel: false,
+    token: 0, samples: [], prevCache: null, results: []
+  };
+
+  const fmt = b => { const m = b / MB; return (m >= 100 ? m.toFixed(0) : m >= 10 ? m.toFixed(1) : m.toFixed(2)) + " ميجا"; };
+  const fmtKB = b => (b / 1024).toFixed(0) + " ك.ب";
+  const steps = () => (S.mode === "bw" ? BW_STEPS : JPEG_STEPS);
+  const totalPages = () => S.files.reduce((a, f) => a + f.n, 0);
+  const totalSize = () => S.files.reduce((a, f) => a + f.size, 0);
+  const tick = () => new Promise(r => setTimeout(r, 0));
+  const mkCanvas = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
+  const ctx2d = c => c.getContext("2d", { willReadFrequently: true });
+
+  /* ---------- PDF reading ---------- */
+  async function openPdf(file) {
+    const data = new Uint8Array(await file.arrayBuffer());
+    const doc = await pdfjsLib.getDocument({ data, isEvalSupported: false }).promise;
+    return doc;
+  }
+
+  // Native resolution of the biggest image on the page (scanned PDFs), else null.
+  async function imageDpi(doc, pageNo) {
+    try {
+      const page = await doc.getPage(pageNo);
+      const ops = await page.getOperatorList();
+      const O = pdfjsLib.OPS; let ctm = [1, 0, 0, 1, 0, 0]; const st = []; let best = null, bestArea = 0;
+      const mul = (m, n) => [m[0]*n[0] + m[2]*n[1], m[1]*n[0] + m[3]*n[1], m[0]*n[2] + m[2]*n[3], m[1]*n[2] + m[3]*n[3], m[0]*n[4] + m[2]*n[5] + m[4], m[1]*n[4] + m[3]*n[5] + m[5]];
+      for (let i = 0; i < ops.fnArray.length; i++) {
+        const fn = ops.fnArray[i], a = ops.argsArray[i];
+        if (fn === O.save) st.push(ctm.slice());
+        else if (fn === O.restore) ctm = st.pop() || [1, 0, 0, 1, 0, 0];
+        else if (fn === O.transform) ctm = mul(ctm, a);
+        else if (fn === O.paintFormXObjectBegin) { st.push(ctm.slice()); if (a && a[0]) ctm = mul(ctm, a[0]); }
+        else if (fn === O.paintFormXObjectEnd) ctm = st.pop() || [1, 0, 0, 1, 0, 0];
+        else if (fn === O.paintImageXObject || fn === O.paintInlineImageXObject) {
+          let w, h;
+          if (fn === O.paintImageXObject) { w = a[1]; h = a[2]; } else { w = a[0] && a[0].width; h = a[0] && a[0].height; }
+          const dw = Math.hypot(ctm[0], ctm[1]), dh = Math.hypot(ctm[2], ctm[3]);
+          if (!w || !h || !dw || !dh) continue;
+          const area = dw * dh;
+          if (area > bestArea) { bestArea = area; best = Math.max(w / (dw / 72), h / (dh / 72)); }
+        }
+      }
+      const vp = page.getViewport({ scale: 1 });
+      page.cleanup();
+      if (best && bestArea > 0.3 * vp.width * vp.height) return best;
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+
+  async function renderPage(f, pageNo, dpi) {
+    const page = await f.doc.getPage(pageNo);
+    const base = page.getViewport({ scale: 1 });
+    const vp = page.getViewport({ scale: dpi / 72 });
+    const c = mkCanvas(Math.max(1, Math.round(vp.width)), Math.max(1, Math.round(vp.height)));
+    const x = ctx2d(c); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height);
+    // "print" intent renders without requestAnimationFrame, so work keeps going when the tab is in the background.
+    await page.render({ canvasContext: x, viewport: vp, intent: "print" }).promise;
+    page.cleanup();
+    return { canvas: c, wPt: base.width, hPt: base.height };
+  }
+
+  function scaleCanvas(src, s) {
+    const tw = Math.max(1, Math.round(src.width * s)), th = Math.max(1, Math.round(src.height * s));
+    let cur = src;
+    while (cur.width / 2 >= tw * 1.05) {
+      const c = mkCanvas(Math.round(cur.width / 2), Math.round(cur.height / 2));
+      const x = ctx2d(c); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = "high"; x.drawImage(cur, 0, 0, c.width, c.height); cur = c;
+    }
+    const out = mkCanvas(tw, th), x = ctx2d(out);
+    x.imageSmoothingEnabled = true; x.imageSmoothingQuality = "high"; x.drawImage(cur, 0, 0, tw, th);
+    return out;
+  }
+
+  function whitenCopy(src, s, gray) {
+    const c = s < 0.999 ? scaleCanvas(src, s) : (() => { const k = mkCanvas(src.width, src.height); ctx2d(k).drawImage(src, 0, 0); return k; })();
+    const x = ctx2d(c), im = x.getImageData(0, 0, c.width, c.height), d = im.data;
+    for (let i = 0; i < d.length; i += 4) {
+      let r = d[i], g = d[i + 1], b = d[i + 2];
+      if (gray) { r = g = b = (r * 77 + g * 150 + b * 29) >> 8; }
+      const mx = r > g ? (r > b ? r : b) : (g > b ? g : b), mn = r < g ? (r < b ? r : b) : (g < b ? g : b);
+      if (mn >= 245 && mx - mn <= 14) r = g = b = 255;
+      d[i] = r; d[i + 1] = g; d[i + 2] = b;
+    }
+    x.putImageData(im, 0, 0);
+    return c;
+  }
+
+  function toBits(c, thr) {
+    const d = ctx2d(c).getImageData(0, 0, c.width, c.height).data, px = new Uint8Array(c.width * c.height);
+    for (let i = 0, j = 0; j < px.length; i += 4, j++) px[j] = ((d[i] * 77 + d[i + 1] * 150 + d[i + 2] * 29) >> 8) <= thr ? 1 : 0;
+    return px;
+  }
+
+  // toDataURL is synchronous and fast; toBlob can be deferred by the browser for a second or more per call.
+  function jpegBytes(c, q) {
+    const url = c.toDataURL("image/jpeg", q), bin = atob(url.slice(url.indexOf(",") + 1));
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+
+  // Encode one page at a ladder step. src = render at the file's native dpi; renderAt(scale) renders at a higher dpi when needed.
+  async function encodeStep(src, renderAt, step, mode) {
+    if (mode === "bw") {
+      const s = BW_STEPS[step][0];
+      const c = s > 1.001 ? await renderAt(s) : (s < 0.999 ? scaleCanvas(src, s) : src);
+      const px = toBits(c, S.ink);
+      return { data: G4.encode(px, c.width, c.height), w: c.width, h: c.height, dict: PDFW.g4Dict(c.width, c.height), px };
+    }
+    const [s, q] = JPEG_STEPS[step];
+    const c = whitenCopy(src, s, mode === "gray");
+    const data = jpegBytes(c, q);
+    return { data, w: c.width, h: c.height, dict: PDFW.jpegDict(c.width, c.height), blob: new Blob([data], { type: "image/jpeg" }) };
+  }
+
+  /* ---------- measuring: size of every ladder step on a few sample pages ---------- */
+  function pickSamples() {
+    const N = totalPages(), out = [];
+    S.files.forEach((f, fi) => {
+      const k = Math.min(f.n, Math.max(1, Math.round(MAX_SAMPLES * f.n / N)));
+      for (let j = 0; j < k; j++) out.push({ fi, p: Math.min(f.n, 1 + Math.floor((j + 0.5) * f.n / k)) });
+    });
+    return out.slice(0, Math.max(MAX_SAMPLES, S.files.length));
+  }
+
+  async function measure() {
+    const token = ++S.token;
+    S.curve = null; renderReadout(); setBusy("نقيس الملفات…");
+    $("#go").disabled = true;
+    try {
+      if (!S.files.length) return;
+      const samples = pickSamples();
+      const rendered = [];
+      for (const sm of samples) {
+        const f = S.files[sm.fi];
+        const r = await renderPage(f, sm.p, f.dpi);
+        if (token !== S.token) return;
+        rendered.push({ ...sm, src: r.canvas, hi: {} });
+        await tick();
+      }
+      const L = steps().length, mode = S.mode;
+      const per = Array.from({ length: L }, () => S.files.map(() => []));
+      for (let i = 0; i < L; i++) {
+        for (const r of rendered) {
+          const f = S.files[r.fi];
+          const renderAt = async s => r.hi[s] || (r.hi[s] = (await renderPage(f, r.p, Math.min(400, f.dpi * s))).canvas);
+          const e = await encodeStep(r.src, renderAt, i, mode);
+          if (token !== S.token) return;
+          per[i][r.fi].push(e.data.length);
+        }
+        setBusy(`نقيس الملفات… ${Math.round(100 * (i + 1) / L)}%`);
+        await tick();
+      }
+      const allAvg = i => { const a = per[i].flat(); return a.reduce((x, y) => x + y, 0) / a.length; };
+      S.curve = per.map((pf, i) => {
+        const perFile = S.files.map((f, fi) => {
+          const a = pf[fi], avg = a.length ? a.reduce((x, y) => x + y, 0) / a.length : allAvg(i);
+          return avg * f.n + PAGE_OVERHEAD * f.n + FILE_OVERHEAD;
+        });
+        return { total: perFile.reduce((x, y) => x + y, 0), perFile };
+      });
+      if (!S.touched) {
+        const d = Math.min(DEFAULT_STEP[S.mode], L - 1);
+        S.target = Math.ceil(S.curve[d].total / (MB / 10)) * (MB / 10);
+      }
+      chooseStep(); syncSlider(); renderReadout();
+      $("#go").disabled = false;
+      schedulePreview();
+    } finally { if (token === S.token) setBusy(null); }
+  }
+
+  function chooseStep() {
+    if (!S.curve) return;
+    const i = S.curve.findIndex(c => c.total <= S.target);
+    S.step = i === -1 ? S.curve.length - 1 : i;
+  }
+
+  /* ---------- slider (log scale) ---------- */
+  function range() {
+    const lo = Math.max(0.05 * MB, S.curve[S.curve.length - 1].total * 0.85);
+    const hi = Math.max(totalSize(), S.curve[0].total) * 1.02;
+    return [lo, Math.max(hi, lo * 1.5)];
+  }
+  function syncSlider() {
+    if (!S.curve) return;
+    const [lo, hi] = range();
+    const t = Math.min(hi, Math.max(lo, S.target));
+    $("#slider").value = Math.round(1000 * Math.log(t / lo) / Math.log(hi / lo));
+    $("#mb").value = (S.target / MB).toFixed(S.target >= 10 * MB ? 1 : 2).replace(/\.?0+$/, "") || "0";
+    $("#sMin").textContent = fmt(lo); $("#sMax").textContent = fmt(hi);
+  }
+  function setTarget(bytes, from) {
+    if (!S.curve) return;
+    const [lo, hi] = range();
+    S.target = Math.max(0.05 * MB, Math.min(hi, bytes));
+    S.touched = true;
+    if (from !== "slider") syncSlider();
+    else $("#mb").value = (S.target / MB).toFixed(S.target >= 10 * MB ? 1 : 2).replace(/\.?0+$/, "");
+    const old = S.step; chooseStep(); renderReadout();
+    clearResults();
+    if (S.step !== old) schedulePreview();
+  }
+
+  function qualityOf(i) {
+    if (S.mode === "bw") {
+      const s = BW_STEPS[i][0];
+      return s >= 1 ? ["ممتاز", "good"] : s >= 0.8 ? ["جيد", "good"] : s >= 0.64 ? ["مقبول", "warn"] : ["ضعيف", "bad"];
+    }
+    return i <= 3 ? ["ممتاز", "good"] : i <= 7 ? ["جيد", "good"] : i <= 11 ? ["مقبول", "warn"] : i <= 15 ? ["ضعيف", "bad"] : ["ضعيف جداً", "bad"];
+  }
+  function settingText(i) {
+    const f = S.files[0]; const dpi = f ? f.dpi : 150;
+    if (S.mode === "bw") return `أبيض وأسود · ${Math.round(Math.min(400, dpi * BW_STEPS[i][0]))} نقطة/إنش`;
+    const [s, q] = JPEG_STEPS[i];
+    return `${Math.round(dpi * s)} نقطة/إنش · جودة ${Math.round(q * 100)}%`;
+  }
+  function renderReadout() {
+    const chip = $("#qChip"), note = $("#floorNote");
+    if (!S.curve) { chip.textContent = S.files.length ? "يقيس…" : "—"; chip.className = "chip warn"; $("#qSet").textContent = "—"; $("#qEst").textContent = "—"; note.hidden = true; return; }
+    const [label, cls] = qualityOf(S.step);
+    chip.textContent = label; chip.className = "chip " + cls;
+    $("#qSet").textContent = settingText(S.step);
+    $("#qEst").textContent = "≈ " + fmt(S.curve[S.step].total);
+    const last = S.curve[S.curve.length - 1].total;
+    if (S.target < last) { note.hidden = false; note.textContent = `أصغر حجم نقدر نوصله تقريباً ${fmt(last)}. الملف بيطلع أكبر من الرقم اللي اخترته.`; }
+    else if (S.step === 0 && S.curve[0].total < S.target * 0.8) { note.hidden = false; note.className = "note info"; note.textContent = "هذا أعلى وضوح متاح، والملف بيطلع أصغر من الحجم اللي اخترته."; return; }
+    else note.hidden = true;
+    note.className = "note warn";
+  }
+
+  /* ---------- preview ---------- */
+  let pvTimer = null, pvToken = 0;
+  function schedulePreview() { clearTimeout(pvTimer); pvTimer = setTimeout(updatePreview, 180); }
+  async function updatePreview() {
+    const f = S.files[S.pf];
+    if (!f) { $("#empty").hidden = false; $("#sheet").hidden = true; return; }
+    const tk = ++pvToken;
+    setBusy("يجهّز المعاينة…");
+    try {
+      const key = f.id + ":" + S.pg;
+      if (!S.prevCache || S.prevCache.key !== key) {
+        const r = await renderPage(f, S.pg, f.dpi);
+        if (tk !== pvToken) return;
+        S.prevCache = { key, src: r.canvas, hi: {} };
+      }
+      const pc = S.prevCache, cvB = $("#cvBefore");
+      cvB.width = pc.src.width; cvB.height = pc.src.height; cvB.getContext("2d").drawImage(pc.src, 0, 0);
+      if (S.curve) {
+        const renderAt = async s => pc.hi[s] || (pc.hi[s] = (await renderPage(f, S.pg, Math.min(400, f.dpi * s))).canvas);
+        const e = await encodeStep(pc.src, renderAt, S.step, S.mode);
+        if (tk !== pvToken) return;
+        const cvA = $("#cvAfter");
+        cvA.width = e.w; cvA.height = e.h;
+        const x = cvA.getContext("2d");
+        if (e.blob) { const bmp = await createImageBitmap(e.blob); if (tk !== pvToken) return; x.drawImage(bmp, 0, 0); bmp.close && bmp.close(); }
+        else {
+          const im = x.createImageData(e.w, e.h), d = im.data;
+          for (let i = 0, j = 0; j < e.px.length; i += 4, j++) { const v = e.px[j] ? 0 : 255; d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255; }
+          x.putImageData(im, 0, 0);
+        }
+        $("#pgSize").textContent = fmtKB(e.data.length);
+      } else { $("#pgSize").textContent = "—"; }
+      $("#pgOrig").textContent = fmtKB(f.size / f.n);
+      $("#empty").hidden = true; $("#sheet").hidden = false;
+      applyView(); applyZoom();
+    } catch (err) {
+      console.error(err);
+    } finally { if (tk === pvToken) setBusy(S.curve || !S.files.length ? null : "نقيس الملفات…"); }
+  }
+  function applyView() {
+    const before = S.view === "before" || !S.curve;
+    $("#cvBefore").hidden = !before; $("#cvAfter").hidden = before;
+    $("#tag").textContent = before ? "الأصل" : "بعد الضغط";
+    $("#vAfter").setAttribute("aria-pressed", String(!before)); $("#vBefore").setAttribute("aria-pressed", String(before));
+  }
+  function applyZoom() {
+    const sheet = $("#sheet"), src = S.prevCache && S.prevCache.src;
+    document.querySelectorAll("[data-zoom]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.zoom === S.zoom)));
+    if (!src) return;
+    if (S.zoom === "fit") { sheet.style.width = "min(100%, " + Math.round(src.width) + "px)"; }
+    else { sheet.style.width = Math.round(src.width * Number(S.zoom)) + "px"; }
+  }
+  let busyMsg = null;
+  function setBusy(msg) { busyMsg = msg; const b = $("#busy"); b.hidden = !msg; if (msg) b.textContent = msg; }
+
+  /* ---------- files ---------- */
+  let nextId = 1;
+  async function addFiles(list, opts = {}) {
+    const pdfs = [...list].filter(f => /\.pdf$/i.test(f.name) || f.type === "application/pdf");
+    if (!pdfs.length) return;
+    if (!opts.sample) S.files.filter(f => f.sample).forEach(f => { f.doc && f.doc.destroy(); });
+    if (!opts.sample) S.files = S.files.filter(f => !f.sample);
+    const errors = [];
+    for (const file of pdfs) {
+      const entry = { id: nextId++, name: file.name, size: file.size, n: 0, doc: null, dpi: 150, sample: !!opts.sample, loading: true };
+      S.files.push(entry); renderFiles();
+      try {
+        entry.doc = await openPdf(file);
+        entry.n = entry.doc.numPages;
+        const probes = [1, Math.ceil(entry.n / 2)].filter((v, i, a) => a.indexOf(v) === i);
+        let dpi = null;
+        for (const p of probes) { const d = await imageDpi(entry.doc, p); if (d) dpi = Math.max(dpi || 0, d); }
+        entry.dpi = Math.round(Math.min(300, Math.max(72, dpi || 150)));
+      } catch (e) {
+        errors.push(`${file.name}: ${e && e.name === "PasswordException" ? "الملف محمي بكلمة مرور" : "ما قدرنا نقرأ الملف"}`);
+        S.files = S.files.filter(x => x !== entry);
+      }
+      entry.loading = false;
+    }
+    const en = $("#fileErr"); en.hidden = !errors.length; en.textContent = errors.join(" · ");
+    afterFilesChanged();
+  }
+  function removeFile(id) {
+    const f = S.files.find(x => x.id === id);
+    if (f && f.doc) f.doc.destroy();
+    S.files = S.files.filter(x => x.id !== id);
+    afterFilesChanged();
+  }
+  function afterFilesChanged() {
+    S.pf = Math.min(S.pf, Math.max(0, S.files.length - 1)); S.pg = 1; S.prevCache = null;
+    clearResults(); renderFiles(); renderPager();
+    if (S.files.some(f => f.loading)) return;
+    if (!S.files.length) { S.token++; S.curve = null; renderReadout(); $("#go").disabled = true; $("#empty").hidden = false; $("#sheet").hidden = true; setBusy(null); return; }
+    measure();
+  }
+  function renderFiles() {
+    const ul = $("#fileList"); ul.textContent = "";
+    for (const f of S.files) {
+      const li = document.createElement("li");
+      const nm = document.createElement("span"); nm.className = "name"; nm.textContent = f.name; nm.title = f.name;
+      if (f.sample) { const b = document.createElement("span"); b.className = "badge"; b.textContent = "ملف تجريبي"; nm.appendChild(b); }
+      const meta = document.createElement("span"); meta.className = "meta";
+      meta.textContent = f.loading ? "يفتح الملف…" : `${f.n} صفحة · ${fmt(f.size)}${f.dpi ? ` · ${f.dpi} نقطة/إنش` : ""}`;
+      const x = document.createElement("button"); x.className = "x"; x.type = "button"; x.textContent = "×"; x.setAttribute("aria-label", "احذف " + f.name);
+      x.addEventListener("click", () => removeFile(f.id));
+      li.append(nm, x, meta); ul.appendChild(li);
+    }
+    const ready = !S.files.some(f => f.loading), n = S.files.length;
+    $("#totals").textContent = ready && n ? `المجموع: ${n} ملف · ${totalPages()} صفحة · ${fmt(totalSize())}` : "";
+    $("#mergeRow").hidden = !ready || n < 2;
+    const sel = $("#fileSel"); sel.textContent = "";
+    if (ready) S.files.forEach((f, i) => { const o = document.createElement("option"); o.value = i; o.textContent = f.name; sel.appendChild(o); });
+    sel.value = String(S.pf);
+    $("#fileSelWrap").hidden = !ready || n < 2;
+  }
+  function renderPager() {
+    const f = S.files[S.pf];
+    $("#pgOf").textContent = "من " + (f ? f.n : 1);
+    $("#pgNum").value = S.pg; $("#pgNum").max = f ? f.n : 1;
+  }
+
+  function setModeUI() {
+    document.querySelectorAll("#modeSeg button").forEach(b => b.setAttribute("aria-checked", String(b.dataset.mode === S.mode)));
+    $("#inkRow").hidden = S.mode !== "bw";
+    $("#modeHint").textContent = {
+      color: "يحافظ على الألوان والأختام والكتابة بالقلم. مناسب للفواتير والسندات.",
+      gray: "بدون ألوان. أصغر شوي من الملوّن ويحافظ على الكتابة الباهتة.",
+      bw: "أصغر حجم وأوضح خط للكشوفات والمستندات المطبوعة. الألوان والصور تروح."
+    }[S.mode];
+  }
+
+  /* ---------- compress ---------- */
+  async function run() {
+    if (S.running || !S.curve) return;
+    S.running = true; S.cancel = false; clearResults();
+    $("#go").disabled = true; $("#progress").hidden = false; setBar(0, "يبدأ…");
+    const mode = S.mode, L = steps().length, N = totalPages();
+    const budget = Math.max(S.target * 0.5, S.target - FILE_OVERHEAD * S.files.length - PAGE_OVERHEAD * N);
+    let step = S.step, bytes = 0, done = 0;
+    const out = S.files.map(() => []);
+    try {
+      for (let fi = 0; fi < S.files.length; fi++) {
+        const f = S.files[fi];
+        for (let p = 1; p <= f.n; p++) {
+          if (S.cancel) throw new Error("cancel");
+          const r = await renderPage(f, p, f.dpi);
+          const renderAt = async s => (await renderPage(f, p, Math.min(400, f.dpi * s))).canvas;
+          const e = await encodeStep(r.canvas, renderAt, step, mode);
+          out[fi].push({ w: r.wPt, h: r.hPt, dict: e.dict, data: e.data, step, p });
+          bytes += e.data.length; done++;
+          // Rate control: steer the step so the running total tracks the budget.
+          if (done % 3 === 0 && done < N) {
+            const expect = budget * done / N, ratio = bytes / expect;
+            if (ratio > 1.03 && step < L - 1) step++;
+            else if (ratio < 0.92 && step > 0) step--;
+          }
+          setBar(done / N, `الصفحة ${done} من ${N} · ${fmt(bytes)} حتى الآن`);
+          if (done % 2 === 0) await tick();
+        }
+      }
+      // Fix-up: if the total is still over the target, redo the biggest pages one step smaller.
+      let total = bytes + PAGE_OVERHEAD * N + FILE_OVERHEAD * S.files.length, guard = 0;
+      while (total > S.target && guard < 600 && !S.cancel) {
+        let best = null;
+        out.forEach((arr, fi) => arr.forEach(pg => { if (pg.step < L - 1 && (!best || pg.data.length > best.pg.data.length)) best = { fi, pg }; }));
+        if (!best) break;
+        const f = S.files[best.fi];
+        const r = await renderPage(f, best.pg.p, f.dpi);
+        const renderAt = async s => (await renderPage(f, best.pg.p, Math.min(400, f.dpi * s))).canvas;
+        const e = await encodeStep(r.canvas, renderAt, best.pg.step + 1, mode);
+        total += e.data.length - best.pg.data.length;
+        Object.assign(best.pg, { dict: e.dict, data: e.data, step: best.pg.step + 1 });
+        guard++;
+        if (guard % 5 === 0) { setBar(1, `نضبط الحجم… ${fmt(total)}`); await tick(); }
+      }
+      if (S.cancel) throw new Error("cancel");
+      setBar(1, "يجهّز الملفات…"); await tick();
+      const res = [];
+      if (S.merge && S.files.length > 1) {
+        const blob = PDFW.build(out.flat());
+        res.push({ name: "ملفات-مضغوطة.pdf", blob, orig: totalSize(), pages: N });
+      } else {
+        S.files.forEach((f, fi) => res.push({ name: f.name.replace(/\.pdf$/i, "") + "-مضغوط.pdf", blob: PDFW.build(out[fi]), orig: f.size, pages: f.n }));
+      }
+      S.results = res; renderResults();
+    } catch (err) {
+      if (err && err.message === "cancel") { $("#results").textContent = ""; const p = document.createElement("p"); p.className = "note info"; p.textContent = "انلغى الضغط."; $("#results").appendChild(p); }
+      else { console.error(err); const p = document.createElement("p"); p.className = "note bad"; p.textContent = "صار خطأ أثناء الضغط. جرّب مرة ثانية أو جرّب ملف واحد."; $("#results").appendChild(p); }
+    } finally {
+      S.running = false; $("#go").disabled = !S.curve; $("#progress").hidden = true;
+    }
+  }
+  function setBar(fr, text) { $("#barFill").style.width = (fr * 100).toFixed(1) + "%"; $("#pText").textContent = text; }
+  function clearResults() { S.results = []; $("#results").textContent = ""; }
+
+  function renderResults() {
+    const box = $("#results"); box.textContent = "";
+    let sum = 0;
+    for (const r of S.results) {
+      sum += r.blob.size;
+      const d = document.createElement("div"); d.className = "res";
+      const nm = document.createElement("span"); nm.className = "name"; nm.textContent = r.name; nm.title = r.name;
+      const sz = document.createElement("span"); sz.className = "sz";
+      const b = document.createElement("b"); b.textContent = fmt(r.blob.size);
+      sz.append(`${r.pages} صفحة · ${fmt(r.orig)} ← `, b);
+      const btn = document.createElement("button"); btn.type = "button"; btn.className = "ghost"; btn.textContent = "حفظ";
+      const msg = document.createElement("span"); msg.className = "msg";
+      if (r.blob.size >= r.orig) msg.textContent = "الملف الأصلي أصغر من الناتج. خلك على الأصل.";
+      btn.addEventListener("click", () => save(r, msg));
+      d.append(nm, btn, sz, msg); box.appendChild(d);
+    }
+    if (S.results.length > 1) {
+      const t = document.createElement("p"); t.className = "totals";
+      t.textContent = `المجموع بعد الضغط: ${fmt(sum)} من أصل ${fmt(totalSize())}`;
+      box.appendChild(t);
+    }
+  }
+
+  async function save(r, msg) {
+    msg.textContent = "";
+    const dl = await downloadsP;
+    if (dl) {
+      try { await dl.save({ filename: r.name, data: r.blob }); msg.textContent = "انحفظ الملف."; }
+      catch (e) {
+        const code = e && e.code;
+        msg.textContent = code === "declined" ? "ما انحفظ الملف." : code === "rate_limited" ? "فيه نافذة حفظ مفتوحة. كمّلها وجرّب مرة ثانية." : "الحفظ غير متاح هنا.";
+      }
+      return;
+    }
+    const a = document.createElement("a"); a.href = URL.createObjectURL(r.blob); a.download = r.name;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 8000);
+  }
+
+  /* ---------- example file, so the page opens in a working state ---------- */
+  async function makeSample() {
+    try { await Promise.all([document.fonts.load('600 40px "IBM Plex Sans Arabic"'), document.fonts.load('500 40px "Readex Pro"')]); } catch (e) {}
+    const W = 1240, H = 1753, pages = [];
+    const font = (w, px, fam) => `${w} ${px}px ${fam === "d" ? '"Readex Pro"' : '"IBM Plex Sans Arabic"'}, Tahoma, sans-serif`;
+    for (let k = 0; k < 2; k++) {
+      const c = mkCanvas(W, H), x = ctx2d(c);
+      x.fillStyle = "#fbfbf8"; x.fillRect(0, 0, W, H);
+      const top = 70, left = 90, w = W - 180, h = 980;
+      x.fillStyle = k ? "#fdf6c9" : "#e6f4ec"; x.fillRect(left, top, w, h);
+      x.fillStyle = k ? "#c0392b" : "#165d7a"; x.fillRect(left, top, w, 150);
+      x.direction = "rtl"; x.textAlign = "right"; x.fillStyle = "#fff";
+      x.font = font(700, 54, "d"); x.fillText("مؤسسة الساحل للنقل", left + w - 40, top + 82);
+      x.font = font(500, 26); x.fillText("نقل بضائع وسيارات بين المدن · مثال توضيحي", left + w - 40, top + 125);
+      x.fillStyle = "#1b1b1b"; x.font = font(700, 40, "d"); x.fillText(k ? "سند استلام سيارة" : "سند شحن", left + w - 40, top + 220);
+      x.textAlign = "left"; x.direction = "ltr"; x.fillStyle = "#c0392b"; x.font = font(600, 46, "d"); x.fillText(k ? "No. 7735" : "No. 4812", left + 40, top + 220);
+      x.direction = "rtl"; x.textAlign = "right";
+      const rows = k ? ["المالك", "نوع السيارة", "رقم اللوحة", "من مدينة", "إلى مدينة", "الأجرة"] : ["المرسل", "المستلم", "رقم الجوال", "المدينة", "عدد الطرود", "الأجرة"];
+      const vals = k ? ["سالم الغامدي", "تويوتا كامري 2022", "أ ب ج 4521", "الدمام", "جدة", "900 ريال"] : ["محمد عبدالله", "خالد يوسف", "0551234567", "جدة ← الرياض", "3 طرود", "450 ريال"];
+      x.strokeStyle = "#2f3a36"; x.lineWidth = 2;
+      rows.forEach((r, i) => {
+        const y = top + 290 + i * 95;
+        x.strokeRect(left + 40, y, w - 80, 78);
+        x.fillStyle = "#1b1b1b"; x.font = font(600, 30); x.fillText(r + ":", left + w - 60, y + 50);
+        x.save(); x.fillStyle = "#1f3fa6"; x.font = font(500, 38, "d"); x.translate(left + w - 290, y + 52); x.rotate(-0.025); x.fillText(vals[i], 0, 0); x.restore();
+        x.setLineDash([3, 6]); x.beginPath(); x.moveTo(left + 70, y + 60); x.lineTo(left + w - 270, y + 60); x.stroke(); x.setLineDash([]);
+      });
+      x.fillStyle = "#3d3d3d"; x.font = font(400, 19);
+      const terms = ["الشروط: المؤسسة غير مسؤولة عن البضائع غير المصرّح عنها، ويجب استلام الشحنة خلال 15 يوماً من تاريخ الوصول.", "أي اعتراض على الشحنة يقدّم كتابياً عند الاستلام، والتعويض بحد أقصى 100 ريال للطرد ما لم يتم التأمين عليه."];
+      terms.forEach((t, i) => x.fillText(t, left + w - 40, top + 890 + i * 32));
+      x.save(); x.translate(left + 270, top + 760); x.rotate(-0.28); x.strokeStyle = "rgba(200,30,40,.75)"; x.lineWidth = 6;
+      x.beginPath(); x.arc(0, 0, 105, 0, Math.PI * 2); x.stroke(); x.beginPath(); x.arc(0, 0, 86, 0, Math.PI * 2); x.lineWidth = 3; x.stroke();
+      x.fillStyle = "rgba(200,30,40,.8)"; x.textAlign = "center"; x.font = font(700, 40, "d"); x.fillText("مدفوع", 0, 14); x.restore();
+      const im = x.getImageData(0, 0, W, H), d = im.data;
+      for (let i = 0; i < d.length; i += 4) { const n = (Math.random() - 0.5) * 18; d[i] = Math.max(0, Math.min(255, d[i] + n)); d[i + 1] = Math.max(0, Math.min(255, d[i + 1] + n)); d[i + 2] = Math.max(0, Math.min(255, d[i + 2] + n)); }
+      x.putImageData(im, 0, 0);
+      pages.push({ w: 595.28, h: 841.89, dict: PDFW.jpegDict(W, H), data: jpegBytes(c, 0.92) });
+    }
+    return new File([PDFW.build(pages)], "ملف-تجريبي.pdf", { type: "application/pdf" });
+  }
+
+  /* ---------- wiring ---------- */
+  const input = $("#fileInput"), drop = $("#drop");
+  input.addEventListener("change", () => { addFiles(input.files); input.value = ""; });
+  ["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", e => { if (e.dataTransfer && e.dataTransfer.files) addFiles(e.dataTransfer.files); });
+  document.addEventListener("dragover", e => e.preventDefault());
+  document.addEventListener("drop", e => { e.preventDefault(); if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length && !drop.contains(e.target)) addFiles(e.dataTransfer.files); });
+
+  document.querySelectorAll("#modeSeg button").forEach(b => b.addEventListener("click", () => {
+    if (S.mode === b.dataset.mode) return;
+    S.mode = b.dataset.mode; S.touched = false; setModeUI(); clearResults(); measure();
+  }));
+  let inkTimer = null;
+  $("#ink").addEventListener("input", e => { S.ink = Number(e.target.value); clearTimeout(inkTimer); inkTimer = setTimeout(() => { clearResults(); measure(); }, 350); });
+
+  $("#slider").addEventListener("input", e => {
+    if (!S.curve) return;
+    const [lo, hi] = range(); setTarget(lo * Math.pow(hi / lo, Number(e.target.value) / 1000), "slider");
+  });
+  $("#mb").addEventListener("change", e => { const v = parseFloat(String(e.target.value).replace(",", ".")); if (v > 0) setTarget(v * MB); else syncSlider(); });
+  const nudge = dir => {
+    if (!S.curve) return;
+    const m = S.target / MB, st = m >= 50 ? 5 : m >= 10 ? 1 : m >= 2 ? 0.5 : 0.1;
+    setTarget(Math.max(st, (Math.round(m / st) + dir) * st) * MB);
+  };
+  $("#plus").addEventListener("click", () => nudge(1));
+  $("#minus").addEventListener("click", () => nudge(-1));
+  $("#merge").addEventListener("change", e => { S.merge = e.target.checked; clearResults(); });
+  $("#go").addEventListener("click", run);
+  $("#cancel").addEventListener("click", () => { S.cancel = true; });
+
+  $("#fileSel").addEventListener("change", e => { S.pf = Number(e.target.value); S.pg = 1; renderPager(); schedulePreview(); });
+  const goPage = n => { const f = S.files[S.pf]; if (!f) return; S.pg = Math.min(f.n, Math.max(1, n)); renderPager(); schedulePreview(); };
+  $("#prevPg").addEventListener("click", () => goPage(S.pg - 1));
+  $("#nextPg").addEventListener("click", () => goPage(S.pg + 1));
+  $("#pgNum").addEventListener("change", e => goPage(parseInt(e.target.value, 10) || 1));
+  $("#vAfter").addEventListener("click", () => { S.view = "after"; applyView(); });
+  $("#vBefore").addEventListener("click", () => { S.view = "before"; applyView(); });
+  document.querySelectorAll("[data-zoom]").forEach(b => b.addEventListener("click", () => { S.zoom = b.dataset.zoom; applyZoom(); }));
+  const sheet = $("#sheet");
+  sheet.addEventListener("pointerdown", () => { sheet.dataset.view = S.view; S.view = "before"; applyView(); });
+  ["pointerup", "pointerleave", "pointercancel"].forEach(ev => sheet.addEventListener(ev, () => { if (sheet.dataset.view) { S.view = sheet.dataset.view; delete sheet.dataset.view; applyView(); } }));
+
+  setModeUI(); renderReadout();
+  if (!pdfjsReady) {
+    $("#empty").textContent = "ما قدرنا نحمّل قارئ PDF. تأكد من اتصال الإنترنت وحدّث الصفحة.";
+  } else {
+    makeSample().then(f => { if (!S.files.length) addFiles([f], { sample: true }); }).catch(e => console.error(e));
+  }
+})();
+</script>
+
+</body>
+</html>
